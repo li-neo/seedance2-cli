@@ -9,14 +9,18 @@
  * - 支持虚拟环境隔离（推荐）
  * - 详细的 JSON 状态输出（便于 Agent 解析）
  * - 失败时返回非零退出码
+ *
+ * 使用方式：
+ *   curl -fsSL https://raw.githubusercontent.com/li-neo/seedance2-cli/main/install.js | node
  */
 
 const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const PKG_NAME = 'seedance2-cli';
-const REQUIREMENTS = path.join(__dirname, 'requirements.txt');
+const REPO_URL = 'https://github.com/li-neo/seedance2-cli.git';
 
 function log(level, message) {
   const timestamp = new Date().toISOString();
@@ -84,37 +88,32 @@ function detectPip(python) {
   }
 }
 
-async function installPythonDeps(python, useVenv = false) {
-  let targetPython = python;
+async function cloneRepo(targetDir) {
+  if (fs.existsSync(targetDir)) {
+    log('info', `Directory exists: ${targetDir}, pulling latest changes...`);
+    await runCommand('git', ['-C', targetDir, 'pull'], { silent: true });
+  } else {
+    log('info', `Cloning repository to ${targetDir}...`);
+    await runCommand('git', ['clone', REPO_URL, targetDir], { silent: true });
+  }
+}
 
-  // 默认使用虚拟环境（推荐，避免系统 Python 权限问题）
-  const venvPath = path.join(__dirname, '.venv');
-  if (useVenv || !fs.existsSync(venvPath)) {
-    if (!fs.existsSync(venvPath)) {
-      log('info', 'Creating virtual environment...');
-      await runCommand(python, ['-m', 'venv', venvPath], { silent: true });
-    }
+async function installPythonDeps(python, requirementsPath) {
+  const venvPath = path.join(path.dirname(requirementsPath), '.venv');
 
-    const venvPython = process.platform === 'win32'
-      ? path.join(venvPath, 'Scripts', 'python.exe')
-      : path.join(venvPath, 'bin', 'python');
-
-    targetPython = venvPython;
-    log('info', `Using virtual environment: ${venvPath}`);
-  } else if (fs.existsSync(venvPath)) {
-    const venvPython = process.platform === 'win32'
-      ? path.join(venvPath, 'Scripts', 'python.exe')
-      : path.join(venvPath, 'bin', 'python');
-    targetPython = venvPython;
-    log('info', `Reusing virtual environment: ${venvPath}`);
+  if (!fs.existsSync(venvPath)) {
+    log('info', 'Creating virtual environment...');
+    await runCommand(python, ['-m', 'venv', venvPath], { silent: true });
   }
 
-  const pipArgs = ['-m', 'pip', 'install', '-r', REQUIREMENTS];
+  const venvPython = process.platform === 'win32'
+    ? path.join(venvPath, 'Scripts', 'python.exe')
+    : path.join(venvPath, 'bin', 'python');
 
-  log('info', `Installing Python dependencies with ${targetPython}...`);
-  await runCommand(targetPython, pipArgs);
+  log('info', `Installing Python dependencies with ${venvPython}...`);
+  await runCommand(venvPython, ['-m', 'pip', 'install', '-r', requirementsPath], { silent: false });
 
-  return targetPython;
+  return venvPython;
 }
 
 async function main() {
@@ -144,19 +143,34 @@ async function main() {
   }
   log('info', 'pip is available');
 
-  // 4. 安装 Python 依赖
-  const useVenv = process.env.SEEDANCE_USE_VENV === '1';
+  // 4. 克隆仓库到临时目录
+  const installDir = process.env.SEEDANCE_INSTALL_DIR || path.join(os.tmpdir(), PKG_NAME);
   try {
-    const targetPython = await installPythonDeps(python, useVenv);
+    await cloneRepo(installDir);
+    log('info', `Repository ready at ${installDir}`);
+  } catch (err) {
+    log('error', `Failed to clone repository: ${err.message}`);
+    process.exit(1);
+  }
+
+  // 5. 安装 Python 依赖
+  const requirementsPath = path.join(installDir, 'requirements.txt');
+  if (!fs.existsSync(requirementsPath)) {
+    log('error', `requirements.txt not found at ${requirementsPath}`);
+    process.exit(1);
+  }
+
+  try {
+    const targetPython = await installPythonDeps(python, requirementsPath);
     log('info', `Python dependencies installed successfully. Python: ${targetPython}`);
   } catch (err) {
     log('error', `Failed to install Python dependencies: ${err.message}`);
     process.exit(1);
   }
 
-  // 5. 验证 CLI 可用性
+  // 6. 验证 CLI 可用性
   try {
-    const binPath = path.join(__dirname, 'bin', 'seedance.js');
+    const binPath = path.join(installDir, 'bin', 'seedance.js');
     await runCommand('node', [binPath, '--version'], { silent: true });
     log('info', 'CLI verification passed');
   } catch (err) {
@@ -164,8 +178,11 @@ async function main() {
     process.exit(1);
   }
 
+  // 7. 输出使用信息
   log('info', 'Installation completed successfully!');
-  log('info', 'Usage: npx github:li-neo/seedance2-cli <command>');
+  log('info', `Install directory: ${installDir}`);
+  log('info', `To use: cd ${installDir} && node bin/seedance.js <command>`);
+  log('info', 'Or: npx github:li-neo/seedance2-cli <command>');
 }
 
 main().catch((err) => {
