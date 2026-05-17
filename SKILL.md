@@ -106,8 +106,8 @@ export VOLC_TOS_REGION="ap-southeast-1"
 export VOLC_TOS_ENDPOINT="tos-ap-southeast-1.bytepluses.com"
 export VOLC_TOS_BUCKET="xxx"
 
-### ARK
-export VOLC_ARK_API_URL="https://ark.ap-southeast.bytepluses.com/api/v3"
+# ARK
+export VOLC_ARK_API_URL="https://ark.ap-southeast-1.byteplusapi.com/api/v3"
 export VOLC_ARK_API_KEY="xxxxx"
 export VOLC_ARK_SEEDANCE_MODEL="dreamina-seedance-2-0-260128"
 ```
@@ -234,20 +234,22 @@ seedance generate \
 
 可通过 `seedance generate --help` 查看完整参数列表。
 
+---
+
 ## 9. 安装后引导流程
 
 安装 Skill 后，推荐按照以下顺序引导用户完成环境配置和首个示例的执行：
 
 1. **安装完成后立即发送环境配置命令模板。**
    - 将「3.2. 配置环境变量」中的 `国内环境配置示例` 与 `BytePlus 环境配置示例` 两段命令原样发送给用户，确保两套命令与本章节保持同步更新。
-   - 明确提示：**“请将以下命令复制粘贴到会话，替换敏感信息（AK/SK、Bucket、API key、Model 等）后发回给我进行校验。”**
+   - 明确提示：**"请将以下命令复制粘贴到会话，替换敏感信息（AK/SK、Bucket、API key、Model 等）后发回给我进行校验。"**
 
 2. **根据用户粘贴回来的命令进行校验。**
    - 检查是否包含本 Skill 所需的全部环境变量：`VOLC_ACCESS_KEY`、`VOLC_SECRET_KEY`、所有 `VOLC_ASSETS_*`（含 `VOLC_ASSETS_GROUP` 与 `VOLC_ASSETS_PROJECT`）、所有 `VOLC_TOS_*`、`VOLC_ARK_API_URL`、`VOLC_ARK_API_KEY`、`VOLC_ARK_SEEDANCE_MODEL`。
    - 如发现遗漏或拼写错误，在会话中直接指出问题项并给出修正示例；仅在命令完整且字段正确时再继续执行示例命令。
 
 3. **确认环境就绪后再运行示例。**
-   - 在确认用户侧环境配置无误后，引导其在本地终端执行依赖安装命令和示例 CLI（例如「7. 使用示例」中的文生视频或视频续写/编辑示例）。
+   - 在确认用户侧环境配置无误后，引导其在本地终端执行依赖安装命令和示例 CLI（例如「8. 使用示例」中的文生视频或视频续写/编辑示例）。
    - 当运行 `scripts/pipeline.py` 时，如仍存在环境缺失，`check_and_guide_envs` 会在日志中自动输出同样的两套完整配置命令，供用户再次复制粘贴并修正。
 
 4. **关于随机种子配置的提醒。**
