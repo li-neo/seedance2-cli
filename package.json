@@ -1,0 +1,35 @@
+{
+  "name": "seedance2-cli",
+  "version": "1.0.0",
+  "description": "seedance2-cli - Seedance-2 视频生成 CLI 工具集。一键生成视频，支持多模式自动识别、TOS 上传、Assets 兜底等完整流水线。",
+  "main": "index.js",
+  "bin": {
+    "seedance": "bin/seedance.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "test": "cd scripts && python3 -m pytest tests/ -v"
+  },
+  "keywords": [
+    "seedance",
+    "volcengine",
+    "video-generation",
+    "cli",
+    "ark",
+    "tos",
+    "assets"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "prompts/",
+    "references/",
+    "SKILL.md",
+    "requirements.txt"
+  ]
+}
